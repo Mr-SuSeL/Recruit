@@ -1,0 +1,46 @@
+# Python
+# ========================
+# Ignoruj folder środowiska wirtualnego
+venv/
+.venv/
+env/
+.env/
+
+# Zignoruj pliki kompilowane Pythona
+*.pyc
+*.pyo
+__pycache__/
+
+# Zignoruj pliki i foldery specyficzne dla IDE (np. VS Code, PyCharm)
+.idea/             # PyCharm
+.vscode/           # VS Code
+*.sublime-project  # Sublime Text
+*.sublime-workspace
+
+# Zignoruj pliki baz danych
+*.sqlite3          # SQLite databases
+*.db               # Ogólne pliki baz danych
+
+# Zignoruj pliki logów
+*.log
+
+# Zignoruj dane tymczasowe/generowane
+*.tmp
+*.bak
+dist/
+build/
+*.egg-info/
+
+# Zignoruj pliki konfiguracyjne z wrażliwymi danymi (np. API keys)
+.env
+.flaskenv
+config.ini
+settings.py        # Jeśli zawiera wrażliwe dane, które nie powinny być w repozytorium
+
+# Testy (jeśli generują jakieś pliki, które nie powinny być wersjonowane)
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Jupyter Notebook (jeśli używasz)
+.ipynb_checkpoints

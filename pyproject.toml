@@ -1,0 +1,41 @@
+[project]
+name = "python-logging-challenge"
+version = "0.1.0"
+description = "Refactored logging library for internship internship"
+authors = [
+    { name = "Twój Imię Nazwisko", email = "twój.email@example.com" },
+]
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    ".git",
+    "__pycache__",
+    "venv",
+    ".ruff_cache",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Te sekcje zostały przeniesione z [tool.ruff]
+select = [
+    "E", "F", "W", "I", "N", "D", "UP", "B", "C4", "COM", "G", "PL", "RET", "SIM", "EXE", "S", "ERA"
+]
+ignore = [
+    "D100",
+    "D104",
+    "D105",
+    "D107",
+]
+per-file-ignores = {"tests/*.py" = ["D"], "__init__.py" = ["F401", "F403"]}
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config -ra -v"

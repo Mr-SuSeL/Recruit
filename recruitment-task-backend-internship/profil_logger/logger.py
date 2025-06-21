@@ -1,146 +1,287 @@
 import datetime
-import threading
-import re
-from typing import List, Optional, Dict, Any
-
-LOG_LEVEL_VALUES = {"DEBUG": 0, "INFO": 1, "WARNING": 2, "ERROR": 3, "CRITICAL": 4}
-DEFAULT_LOG_LEVEL = "DEBUG"
+from collections import defaultdict
+from typing import Any, Literal
 
 
 class LogEntry:
-    def __init__(self, date: datetime.datetime, level: str, msg: str):
-        self.date = date
-        self.level = msg
-        self.message = msg
+    """Represents a single log entry with a timestamp, level, and message.
 
-    def __repr__(self):
-        return f"LogEntry(date={self.date.isoformat()}, level='{self.level}', msg='{self.message}')"
+    This class encapsulates the data for a single log event, including
+    when it occurred, its severity, and the message content.
+
+    Attributes:
+        date (datetime.datetime): The timestamp when the log entry was created.
+        level (str): The severity level of the log entry (e.g., "INFO", "ERROR").
+        message (str): The actual text content of the log.
+
+    """
+
+    def __str__(self) -> str:
+        """Return a string representation of the log entry."""
+        return f"[{self.date.isoformat()}] {self.level}: {self.message}"
+
+    def __repr__(self) -> str:
+        """Return a developer-friendly representation of the log entry."""
+        return (
+            f"LogEntry(date={self.date.isoformat()!r}, "
+            f"level={self.level!r}, msg={self.message!r})"
+        )
 
     def to_dict(self) -> dict:
+        """Convert the log entry to a dictionary.
+
+        This method serializes the LogEntry object into a dictionary
+        suitable for JSON or CSV storage.
+
+        Returns:
+            dict: A dictionary representation of the log entry.
+
+        """
         return {"date": self.date.isoformat(), "level": self.level, "msg": self.message}
 
     @staticmethod
-    def from_dict(data: Dict[str, str]) -> 'LogEntry':
-        return LogEntry(date=datetime.datetime.fromisoformat(data['date']), level=data['level'], msg=data['msg'])
+    def from_dict(data: dict[str, str]) -> "LogEntry":
+        """Create a LogEntry instance from a dictionary.
 
+        This static method reconstructs a LogEntry object from a dictionary,
+        typically used when reading logs from storage.
+
+        Args:
+            data (dict[str, str]): A dictionary containing 'date', 'level', and 'msg' keys.
+
+        Returns:
+            LogEntry: A new LogEntry instance.
+
+        """
+        return LogEntry(
+            date=datetime.datetime.fromisoformat(data["date"]),
+            level=data["level"],
+            msg=data["msg"],
+        )
+
+LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 class ProfilLogger:
-    def __init__(self, handlers: List[Any]):
+    """A logger that dispatches log entries to multiple handlers.
+
+    This class provides an interface for logging messages at different
+    severity levels. It supports multiple logging handlers (e.g., JSON, CSV,
+    SQLite) to persist log entries.
+
+    Attributes:
+        handlers (list[Any]): A list of handler objects responsible for persisting logs.
+        log_level (LogLevel): The minimum log level to process. Messages below this
+                              level will be ignored.
+        log_levels (dict[str, int]): A mapping of log level names to their integer priorities.
+
+    """
+
+    def __init__(self, handlers: list[Any]):
         self.handlers = handlers
-        self.current_log_level_val = LOG_LEVEL_VALUES[DEFAULT_LOG_LEVEL]
+        self.log_level: LogLevel = "INFO"
+        self.log_levels = {
+            "DEBUG": 10,
+            "INFO": 20,
+            "WARNING": 30,
+            "ERROR": 40,
+            "CRITICAL": 50,
+        }
 
-    def _log(self, level: str, msg: str):
-        if LOG_LEVEL_VALUES[level] < self.current_log_level_val:
-            return
-        entry = LogEntry(date=datetime.datetime.now(), level=level, msg=msg)
-        for handler_item in self.handlers:
-            self._write_to_handler(handler_item, entry)
+    def _log(self, level: LogLevel, msg: str):
+        """Process and dispatch a log entry to all registered handlers.
 
-    def _write_to_handler(self, handler: Any, entry: LogEntry):
-        try:
-            try:
-                handler.persist_log_sql(entry)
-            except AttributeError:
+        This internal method checks if the given log level meets the
+        configured minimum log level and, if so, creates a LogEntry
+        and attempts to persist it using each handler.
+
+        Args:
+            level (LogLevel): The severity level of the log message.
+            msg (str): The log message content.
+
+        """
+        if self.log_levels[level] >= self.log_levels[self.log_level]:
+            entry = LogEntry(date=datetime.datetime.now(), level=level, msg=msg)
+            for handler in self.handlers:
                 try:
-                    handler.persist_log_json(entry)
-                except AttributeError:
-                    handler.persist_log_csv(entry)
-        except Exception as e:
-            try:
-                handler.persist_log_file(entry)
-            except Exception as final_e:
-                 print(f"ERROR: All handlers failed. Final error on {type(handler).__name__}: {final_e}")
+                    # Determine which persist method to call based on handler type
+                    if hasattr(handler, "persist_log_json"):
+                        handler.persist_log_json(entry)
+                    elif hasattr(handler, "persist_log_csv"):
+                        handler.persist_log_csv(entry)
+                    elif hasattr(handler, "persist_log_file"):
+                        handler.persist_log_file(entry)
+                    elif hasattr(handler, "persist_log_sql"):
+                        handler.persist_log_sql(entry)
+                    else:
+                        print(
+                            f"WARNING: Handler {type(handler).__name__} has no "
+                            "recognized persist method.",
+                        )
+                except Exception as e:
+                    print(f"ERROR: Failed to persist log with {type(handler).__name__}: {e}")
 
+    def info(self, msg: str):
+        """Log an informational message."""
+        self._log("INFO", msg)
 
-    def info(self, msg: str): self._log("INFO", msg)
-    def warning(self, msg: str): self._log("WARNING", msg)
-    def critical(self, msg: str): self._log("CRITICAL", msg)
-    def error(self, msg: str): self._log("ERROR", msg)
-    def debug(self, msg: str): self._log("DEBUG", msg)
+    def warning(self, msg: str):
+        """Log a warning message."""
+        self._log("WARNING", msg)
+
+    def critical(self, msg: str):
+        """Log a critical message."""
+        self._log("CRITICAL", msg)
+
+    def error(self, msg: str):
+        """Log an error message."""
+        self._log("ERROR", msg)
+
+    def debug(self, msg: str):
+        """Log a debug message."""
+        self._log("DEBUG", msg)
 
     def set_log_level(self, level: str):
-        self.current_log_level_val = LOG_LEVEL_VALUES.get(level.upper(), self.current_log_level_val)
+        """Set the minimum log level for the logger.
 
+        Messages with a severity lower than the set level will be ignored.
+
+        Args:
+            level (str): The desired minimum log level (e.g., "DEBUG", "INFO").
+                         Case-insensitive.
+
+        Raises:
+            ValueError: If an unknown log level is provided.
+
+        """
+        upper_level = level.upper()
+        if upper_level in self.log_levels:
+            self.log_level = LogLevel(upper_level)
+        else:
+            raise ValueError(f"Unknown log level: {level}")
 
 class ProfilLoggerReader:
+    """A utility class to read and query log entries from various handlers.
+
+    This class provides methods to retrieve, filter, and group log entries
+    from different types of log handlers.
+
+    Attributes:
+        handler (Any): The log handler from which to read log entries.
+
+    """
+
     def __init__(self, handler: Any):
         self.handler = handler
 
-    def _get_all_logs_from_handler(self) -> List[LogEntry]:
-        try: 
+    def _get_all_logs_from_handler(self) -> list[LogEntry]:
+        """Retrieve all log entries from the assigned handler.
+
+        This internal method dynamically calls the appropriate retrieve method
+        based on the handler's type.
+
+        Returns:
+            list[LogEntry]: A list of all LogEntry objects from the handler.
+
+        """
+        if hasattr(self.handler, "retrieve_all_logs_json"):
+            return self.handler.retrieve_all_logs_json()
+        if hasattr(self.handler, "retrieve_all_logs_csv"):
+            return self.handler.retrieve_all_logs_csv()
+        if hasattr(self.handler, "retrieve_all_logs_file"):
+            return self.handler.retrieve_all_logs_file()
+        if hasattr(self.handler, "retrieve_all_logs_sql"):
             return self.handler.retrieve_all_logs_sql()
-        except AttributeError:
-            try: return self.handler.retrieve_all_logs_json()
-            except AttributeError:
-                try: return self.handler.retrieve_all_logs_csv()
-                except AttributeError:
-                    try: return self.handler.retrieve_all_logs_file()
-                    except AttributeError:
-                        print(f"ERROR: Handler {type(self.handler).__name__} has no recognized retrieval method.")
-                        return []
+        print(
+            f"WARNING: Handler {type(self.handler).__name__} has no "
+            "recognized retrieve method.",
+        )
+        return []
 
-    def _filter_by_date(self, logs: List[LogEntry], start_date: Optional[datetime.datetime] = None,
-                        end_date: Optional[datetime.datetime] = None) -> List[LogEntry]:
-        if not start_date and not end_date:
-            return logs
-        to_remove = [log for log in logs if (start_date and log.date < start_date) or (end_date and log.date >= end_date)]
-        for item in to_remove:
-            logs.remove(item)
-        return logs
+    def find_by_text(self, text: str, case_sensitive: bool = False) -> list[LogEntry]:
+        """Find log entries containing specific text in their message.
 
-    def find_by_text(self, text: str, start_date=None, end_date=None) -> List[LogEntry]:
+        Args:
+            text (str): The text to search for within log messages.
+            case_sensitive (bool): If True, the search is case-sensitive. Defaults to False.
+
+        Returns:
+            list[LogEntry]: A list of LogEntry objects that contain the specified text.
+
+        """
         all_logs = self._get_all_logs_from_handler()
-        result_logs = [log for log in all_logs if text in log.message]
-        return self._filter_by_date(result_logs, start_date, end_date)
+        results = []
+        for entry in all_logs:
+            message_to_check = entry.message if case_sensitive else entry.message.lower()
+            text_to_find = text if case_sensitive else text.lower()
+            if text_to_find in message_to_check:
+                results.append(entry)
+        return results
 
-    def find_by_regex(self, regex: str, start_date=None, end_date=None) -> List[LogEntry]:
+    def find_by_level(self, level: str) -> list[LogEntry]:
+        """Find log entries matching a specific log level.
+
+        Args:
+            level (str): The log level to filter by (e.g., "ERROR", "INFO"). Case-insensitive.
+
+        Returns:
+            list[LogEntry]: A list of LogEntry objects that match the specified level.
+
+        """
         all_logs = self._get_all_logs_from_handler()
-        try:
-            pattern = re.compile(regex)
-            matching_logs = [log for log in all_logs if pattern.search(log.message)]
-            return self._filter_by_date(matching_logs, start_date, end_date)
-        except re.error:
-            return []
+        results = []
+        target_level_upper = level.upper()
+        for entry in all_logs:
+            if entry.level.upper() == target_level_upper:
+                results.append(entry)
+        return results
 
-    def groupby_level(self, start_date=None, end_date=None) -> Dict[str, List[LogEntry]]:
+    def find_by_date_range(
+        self,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+    ) -> list[LogEntry]:
+        """Find log entries within a specified date range.
+
+        Args:
+            start_date (datetime.datetime): The start of the date range (inclusive).
+            end_date (datetime.datetime): The end of the date range (inclusive).
+
+        Returns:
+            list[LogEntry]: A list of LogEntry objects within the specified date range.
+
+        """
         all_logs = self._get_all_logs_from_handler()
-        logs_to_group = self._filter_by_date(all_logs, start_date, end_date)
+        results = []
+        for entry in all_logs:
+            if start_date <= entry.date <= end_date:
+                results.append(entry)
+        return results
 
-        unique_levels = []
-        for log_entry in logs_to_group:
-            if log_entry.level not in unique_levels:
-                unique_levels.append(log_entry.level)
+    def groupby_level(self) -> dict[str, list[LogEntry]]:
+        """Group log entries by their log level.
 
-        grouped_logs_map = {}
-        for level_key in unique_levels:
-            current_level_logs = []
-            for log_entry in logs_to_group:
-                if log_entry.level == level_key:
-                    current_level_logs.append(log_entry)
-            
-            if current_level_logs:
-                grouped_logs_map[level_key] = current_level_logs
+        Returns:
+            dict[str, list[LogEntry]]: A dictionary where keys are log levels
+                                       and values are lists of LogEntry objects for that level.
 
-        return grouped_logs_map
-
-    def groupby_month(self, start_date=None, end_date=None) -> Dict[str, List[LogEntry]]:
+        """
         all_logs = self._get_all_logs_from_handler()
-        logs_to_group = self._filter_by_date(all_logs, start_date, end_date)
+        grouped_logs: dict[str, list[LogEntry]] = defaultdict(list)
+        for entry in all_logs:
+            grouped_logs[entry.level].append(entry)
+        return dict(grouped_logs)
 
-        unique_month_year_keys = []
-        for log_entry in logs_to_group:
-            month_year_str = log_entry.date.strftime('%Y-%m')
-            if month_year_str not in unique_month_year_keys:
-                unique_month_year_keys.append(month_year_str)
+    def sort_by_date(self, ascending: bool = True) -> list[LogEntry]:
+        """Sort log entries by date.
 
-        grouped_by_month_data = {}
-        for month_key_str in unique_month_year_keys:
-            logs_for_this_month = []
-            for log_entry in logs_to_group:
-                if log_entry.date.strftime('%Y-%m') == month_key_str:
-                    logs_for_this_month.append(log_entry)
-            
-            if logs_for_this_month:
-                grouped_by_month_data[month_key_str] = logs_for_this_month
+        Args:
+            ascending (bool): If True, sort in ascending order (oldest first).
+                              If False, sort in descending order (newest first).
+                              Defaults to True.
 
-        return grouped_by_month_data
+        Returns:
+            list[LogEntry]: A new list of LogEntry objects sorted by date.
+
+        """
+        all_logs = self._get_all_logs_from_handler()
+        return sorted(all_logs, key=lambda entry: entry.date, reverse=not ascending)
