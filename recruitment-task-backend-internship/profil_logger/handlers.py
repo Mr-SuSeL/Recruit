@@ -246,7 +246,7 @@ class SQLLiteHandler:
             cursor = conn.cursor()
             # S608: Table name is safe because it's validated against a whitelist in __init__
             sql_query = (
-                f"INSERT INTO {self.table_name} (timestamp, level, message) "
+                f"INSERT INTO {self.table_name} (timestamp, level, message) "  # noqa: S608
                 "VALUES (?, ?, ?)"
             )
             cursor.execute(sql_query, (entry.date.isoformat(), entry.level, entry.message))
@@ -265,7 +265,7 @@ class SQLLiteHandler:
                 cursor = conn.cursor()
                 # S608: Table name is safe because it's validated against a whitelist in __init__
                 cursor.execute(
-                    f"SELECT timestamp, level, message FROM {self.table_name} "
+                    f"SELECT timestamp, level, message FROM {self.table_name} " # noqa: S608
                     "ORDER BY timestamp ASC",
                 )
                 for row in cursor.fetchall():
