@@ -15,7 +15,11 @@ class LogEntry:
         message (str): The actual text content of the log.
 
     """
-
+    def __init__(self, date: datetime.datetime, level: str, msg: str):
+        self.date = date
+        self.level = level
+        self.message = msg
+    
     def __str__(self) -> str:
         """Return a string representation of the log entry."""
         return f"[{self.date.isoformat()}] {self.level}: {self.message}"

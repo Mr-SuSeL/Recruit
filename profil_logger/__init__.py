@@ -1,5 +1,5 @@
 from .handlers import CSVHandler, FileHandler, JsonHandler, SQLLiteHandler
-from .logger import LOG_LEVEL_VALUES, LogEntry, ProfilLogger, ProfilLoggerReader
+from .logger import LogLevel, LogEntry, ProfilLogger, ProfilLoggerReader
 
 __all__ = [
     "ProfilLogger",
@@ -9,5 +9,5 @@ __all__ = [
     "CSVHandler",
     "SQLLiteHandler",
     "FileHandler",
-    "LOG_LEVEL_VALUES",
+    "LogLevel",
 ]
