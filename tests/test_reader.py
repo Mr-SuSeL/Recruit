@@ -1,13 +1,10 @@
 import pytest
 import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from profil_logger.logger import LogEntry, ProfilLoggerReader, LogLevel
-from profil_logger.handlers import JsonHandler # Poprawiona nazwa klasy handlera JSON
+from profil_logger.logger import LogEntry, ProfilLoggerReader
+from profil_logger.handlers import JsonHandler
 
-# ---
-# Fixture dla przykładowych LogEntry
-# ---
 @pytest.fixture
 def sample_log_entries():
     """
@@ -22,9 +19,6 @@ def sample_log_entries():
         LogEntry(datetime.datetime(2023, 1, 3, 12, 0, 0), "CRITICAL", "Disk full, system halted."),
     ]
 
-# ---
-# Fixture dla mockowanego handlera z gotowymi danymi
-# ---
 @pytest.fixture
 def mock_handler_with_data(sample_log_entries):
     """
@@ -42,17 +36,11 @@ def mock_handler_with_data(sample_log_entries):
 
     return handler
 
-# ---
-# Fixture dla ProfilLoggerReader
-# ---
 @pytest.fixture
 def profil_logger_reader(mock_handler_with_data):
     """Dostarcza instancję ProfilLoggerReader z zamockowanym handlerem."""
     return ProfilLoggerReader(handler=mock_handler_with_data)
 
-# ---
-# Testy funkcjonalności ProfilLoggerReader
-# ---
 
 def test_find_by_text_returns_correct_logs(profil_logger_reader):
     """Testuje wyszukiwanie logów po fragmencie tekstu (case-insensitive i case-sensitive)."""

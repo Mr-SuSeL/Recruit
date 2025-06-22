@@ -1,16 +1,10 @@
 import pytest
-import os
 import datetime
 import json
 import csv
 import sqlite3
 
-# Usunięto nieużywany import MagicMock
-
-# Zakładam, że LogEntry jest w profil_logger.logger
 from profil_logger.logger import LogEntry
-
-# TERAZ TE IMPORTY SĄ ZGODNE Z TWOIMI PREFEROWANYMI NAZWAMI KLAS W handlers.py
 from profil_logger.handlers import JsonHandler, CSVHandler, FileHandler, SQLLiteHandler
 
 

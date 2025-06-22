@@ -1,9 +1,6 @@
 import pytest
-import datetime
 from unittest.mock import MagicMock
-
-# Zostawiamy import LogLevel, ale zmieniamy sposób jego użycia
-from profil_logger.logger import LogEntry, ProfilLogger, LogLevel 
+from profil_logger.logger import ProfilLogger
 
 # Fixture dla mockowanego handlera
 @pytest.fixture
@@ -31,16 +28,14 @@ def test_debug_logging_at_default_level_does_not_call_handler(profil_logger, moc
 
 def test_debug_logging_at_debug_level_calls_handler(profil_logger, mock_handler):
     """Testuje, czy debug() loguje po ustawieniu poziomu na DEBUG."""
-    # Zmieniamy LogLevel.DEBUG na "DEBUG"
-    profil_logger.set_log_level("DEBUG") 
+    profil_logger.set_log_level("DEBUG")
     profil_logger.debug("Another debug message.")
     mock_handler.write.assert_called_once()
     assert mock_handler.write.call_args[0][0].level == "DEBUG"
 
 def test_set_log_level_changes_level(profil_logger):
     """Testuje poprawną zmianę poziomu logowania."""
-    # Zmieniamy LogLevel.ERROR na "ERROR"
-    profil_logger.set_log_level("ERROR") 
+    profil_logger.set_log_level("ERROR")
     assert profil_logger.log_level == "ERROR"
 
 def test_set_log_level_with_invalid_level_raises_error(profil_logger):

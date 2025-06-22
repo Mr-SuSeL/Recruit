@@ -1,15 +1,14 @@
-# profil_logger/handlers.py
 import csv
 import datetime
 import json
 import os
 import sqlite3
-from contextlib import contextmanager # Dodano import contextmanager
+from contextlib import contextmanager 
 
 from .logger import LogEntry, Handler
 
 
-class JsonHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
+class JsonHandler(Handler): 
     """Handles logging to a JSON file."""
     def __init__(self, output_dir: str):
         self.output_dir = output_dir
@@ -45,7 +44,7 @@ class JsonHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
             return []
 
 
-class CSVHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
+class CSVHandler(Handler): 
     """Handles logging to a CSV file."""
     def __init__(self, output_dir: str):
         self.output_dir = output_dir
@@ -73,7 +72,7 @@ class CSVHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
             return []
 
 
-class FileHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
+class FileHandler(Handler): 
     """Handles logging to a plain text file."""
     def __init__(self, output_dir: str):
         self.output_dir = output_dir
@@ -109,7 +108,7 @@ class FileHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
             return []
 
 
-class SQLLiteHandler(Handler): # PRZYWRÓCONO NAZWĘ KLASY
+class SQLLiteHandler(Handler):
     """Handles logging to an SQLite database."""
     _ALLOWED_TABLE_NAMES = {"logs", "other_logs", "debug_logs", "app_events"}
 

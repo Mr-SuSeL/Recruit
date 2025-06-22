@@ -1,6 +1,6 @@
 import datetime
 import inspect
-from typing import Literal, Union, get_args
+from typing import Literal, get_args
 
 # Definicja typów poziomów logowania
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
