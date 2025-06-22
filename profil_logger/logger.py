@@ -18,8 +18,8 @@ class LogEntry:
     def __init__(self, date: datetime.datetime, level: str, msg: str):
         self.date = date
         self.level = level
-        self.message = msg
-    
+        self.message = msg # The internal attribute storing the message
+
     def __str__(self) -> str:
         """Return a string representation of the log entry."""
         return f"[{self.date.isoformat()}] {self.level}: {self.message}"
@@ -28,7 +28,7 @@ class LogEntry:
         """Return a developer-friendly representation of the log entry."""
         return (
             f"LogEntry(date={self.date.isoformat()!r}, "
-            f"level={self.level!r}, msg={self.message!r})"
+            f"level={self.level!r}, msg={self.message!r})" # 'msg' is used here for __repr__ consistency with constructor
         )
 
     def to_dict(self) -> dict:
@@ -41,7 +41,7 @@ class LogEntry:
             dict: A dictionary representation of the log entry.
 
         """
-        return {"date": self.date.isoformat(), "level": self.level, "msg": self.message}
+        return {"date": self.date.isoformat(), "level": self.level, "message": self.message} # Zmieniono 'msg' na 'message'
 
     @staticmethod
     def from_dict(data: dict[str, str]) -> "LogEntry":
@@ -51,7 +51,7 @@ class LogEntry:
         typically used when reading logs from storage.
 
         Args:
-            data (dict[str, str]): A dictionary containing 'date', 'level', and 'msg' keys.
+            data (dict[str, str]): A dictionary containing 'date', 'level', and 'message' keys.
 
         Returns:
             LogEntry: A new LogEntry instance.
@@ -60,7 +60,7 @@ class LogEntry:
         return LogEntry(
             date=datetime.datetime.fromisoformat(data["date"]),
             level=data["level"],
-            msg=data["msg"],
+            msg=data["message"], # Zmieniono 'msg' na 'message'
         )
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -107,19 +107,13 @@ class ProfilLogger:
             entry = LogEntry(date=datetime.datetime.now(), level=level, msg=msg)
             for handler in self.handlers:
                 try:
-                    # Determine which persist method to call based on handler type
-                    if hasattr(handler, "persist_log_json"):
-                        handler.persist_log_json(entry)
-                    elif hasattr(handler, "persist_log_csv"):
-                        handler.persist_log_csv(entry)
-                    elif hasattr(handler, "persist_log_file"):
-                        handler.persist_log_file(entry)
-                    elif hasattr(handler, "persist_log_sql"):
-                        handler.persist_log_sql(entry)
+                    # Uproszczono: wszystkie handlery powinny mieć metodę 'write'
+                    if hasattr(handler, "write"):
+                        handler.write(entry)
                     else:
                         print(
                             f"WARNING: Handler {type(handler).__name__} has no "
-                            "recognized persist method.",
+                            "expected 'write' method.",
                         )
                 except Exception as e:
                     print(f"ERROR: Failed to persist log with {type(handler).__name__}: {e}")
@@ -215,6 +209,7 @@ class ProfilLoggerReader:
         all_logs = self._get_all_logs_from_handler()
         results = []
         for entry in all_logs:
+            # Zmieniono entry.msg na entry.message
             message_to_check = entry.message if case_sensitive else entry.message.lower()
             text_to_find = text if case_sensitive else text.lower()
             if text_to_find in message_to_check:

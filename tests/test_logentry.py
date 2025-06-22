@@ -34,7 +34,7 @@ def test_log_entry_to_dict():
     expected_dict = {
         "date": test_date.isoformat(),
         "level": "INFO",
-        "msg": "Data point.",
+        "message": "Data point.",
     }
     assert entry.to_dict() == expected_dict
 
@@ -44,7 +44,7 @@ def test_log_entry_from_dict():
     data_dict = {
         "date": test_date_str,
         "level": "DEBUG",
-        "msg": "Debugging info.",
+        "message": "Debugging info.",
     }
     entry = LogEntry.from_dict(data_dict)
     assert entry.date == datetime.datetime.fromisoformat(test_date_str)

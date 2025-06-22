@@ -15,20 +15,23 @@ class JsonHandler:
     within a list in the specified file.
 
     Attributes:
-        filepath (str): The path to the JSON log file.
+        output_dir (str): The directory where the JSON log files will be stored.
+        filepath (str): The dynamically generated path to the JSON log file for the current day.
 
     """
 
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.filepath) or '.', exist_ok=True)
+    def __init__(self, output_dir: str):
+        self.output_dir = output_dir
+        # Ensure the output directory exists
+        os.makedirs(self.output_dir, exist_ok=True)
+        self.filepath = os.path.join(self.output_dir, f"log_{datetime.date.today().isoformat()}.json")
+
         # Create an empty file if it doesn't exist or is empty to ensure valid JSON structure
         if not os.path.exists(self.filepath) or os.path.getsize(self.filepath) == 0:
             with open(self.filepath, "w") as f:
                 json.dump([], f) # Initialize with an empty JSON array
 
-    def persist_log_json(self, entry: LogEntry):
+    def write(self, entry: LogEntry): # Zmieniono nazwę metody na 'write'
         """Persist a single log entry to the JSON file.
 
         This method appends a new LogEntry object to the JSON file.
@@ -74,6 +77,7 @@ class JsonHandler:
             return []
         return log_entries_list
 
+
 class CSVHandler:
     """Handles logging to a CSV file.
 
@@ -82,22 +86,25 @@ class CSVHandler:
     as a row in the CSV file.
 
     Attributes:
-        filepath (str): The path to the CSV log file.
+        output_dir (str): The directory where the CSV log files will be stored.
+        filepath (str): The dynamically generated path to the CSV log file for the current day.
         fieldnames (list[str]): The column headers for the CSV file.
 
     """
 
-    def __init__(self, filepath: str):
-        self.filepath = filepath
+    def __init__(self, output_dir: str):
+        self.output_dir = output_dir
         self.fieldnames = ["date", "level", "message"]
-        os.makedirs(os.path.dirname(self.filepath) or '.', exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
+        self.filepath = os.path.join(self.output_dir, f"log_{datetime.date.today().isoformat()}.csv")
+
         # Ensure header is written only if file is new/empty
         if not os.path.exists(self.filepath) or os.path.getsize(self.filepath) == 0:
             with open(self.filepath, "w", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=self.fieldnames)
                 writer.writeheader()
 
-    def persist_log_csv(self, entry: LogEntry):
+    def write(self, entry: LogEntry): # Zmieniono nazwę metody na 'write'
         """Persist a single log entry to the CSV file.
 
         This method appends a new LogEntry object as a row to the CSV file.
@@ -132,6 +139,7 @@ class CSVHandler:
             return []
         return log_entries_list
 
+
 class FileHandler:
     """Handles logging to a plain text file.
 
@@ -139,19 +147,21 @@ class FileHandler:
     Each line contains the timestamp, log level, and message.
 
     Attributes:
-        filepath (str): The path to the text log file.
+        output_dir (str): The directory where the text log files will be stored.
+        filepath (str): The dynamically generated path to the text log file for the current day.
 
     """
 
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-        os.makedirs(os.path.dirname(self.filepath) or '.', exist_ok=True)
+    def __init__(self, output_dir: str):
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
+        self.filepath = os.path.join(self.output_dir, f"log_{datetime.date.today().isoformat()}.log")
         # Create an empty file if it doesn't exist
         if not os.path.exists(self.filepath):
             with open(self.filepath, "w"):
                 pass
 
-    def persist_log_file(self, entry: LogEntry):
+    def write(self, entry: LogEntry): # Zmieniono nazwę metody na 'write'
         """Persist a single log entry to the text file.
 
         This method appends a new LogEntry object as a formatted string
@@ -192,6 +202,7 @@ class FileHandler:
             return []
         return log_entries_list
 
+
 class SQLLiteHandler:
     """Handles logging to an SQLite database.
 
@@ -213,6 +224,7 @@ class SQLLiteHandler:
         if table_name not in self._ALLOWED_TABLE_NAMES:
             raise ValueError(f"Table name '{table_name}' is not allowed.")
         self.table_name = table_name
+        # The directory for the DB file
         os.makedirs(os.path.dirname(self.db_path) or '.', exist_ok=True)
         self._create_table_if_not_exists()
 
@@ -235,7 +247,7 @@ class SQLLiteHandler:
             """)
             conn.commit()
 
-    def persist_log_sql(self, entry: LogEntry):
+    def write(self, entry: LogEntry): # Zmieniono nazwę metody na 'write'
         """Persist a single log entry to the SQLite database.
 
         Args:
